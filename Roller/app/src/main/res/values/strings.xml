@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name"> Mi Roller App </string>
+    <string name = "button_click"> Click </string>
+    <string name = "greeting"> !Greeting </string>
+</resources>
