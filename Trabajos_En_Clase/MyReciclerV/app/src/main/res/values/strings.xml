@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MyReciclerV</string>
+
+    <string-array name = "flores_array">
+
+    </string-array>
+</resources>
