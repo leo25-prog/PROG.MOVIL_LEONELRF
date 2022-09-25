@@ -2,7 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation = "vertical"
+    >
 
     <EditText
         android:id="@+id/txtEmail"
@@ -19,7 +21,9 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textPersonName"
-        android:hint="Name" />
+        android:hint="Name"
+        android:minHeight="48dp"
+        />
 
     <EditText
         android:id="@+id/editTextTextPersonName3"
@@ -27,12 +31,20 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textPersonName"
+        android:minHeight="48dp"
         android:text="Name" />
+
+    <Spinner
+        android:id = "@+id/spnSexo"
+        android:layout_width = "match_parent"
+        android:layout_height = "wrap_content"
+        android:minHeight = "48dp"
+        />
 
     <Button
         android:id="@+id/btnSaveRegister"
         android:layout_width = "match_parent"
-        android:layout_height = "match_parent"
+        android:layout_height = "wrap_parent"
         android:text="Save"
         />
 </LinearLayout>

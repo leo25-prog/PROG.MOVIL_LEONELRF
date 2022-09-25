@@ -81,8 +81,6 @@ class loginActivity : AppCompatActivity() {
             //2) actividad que devuelve parametros  se debe construir los
             // lanzar la actividad que se desea abrir configurando previamente un intent
             activityResultLauncher.launch(intent_activity)
-
         }
-
     }
 }

@@ -3,8 +3,8 @@ package com.example.myreciclerv
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Adapter
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 
 class FlowerAdapter (val dataset : Array <String>): RecyclerView.Adapter<FlowerAdapter.FlowerViewHolder>() {
     class FlowerViewHolder (view: View) : RecyclerView.ViewHolder (view) {
@@ -14,7 +14,7 @@ class FlowerAdapter (val dataset : Array <String>): RecyclerView.Adapter<FlowerA
         }
     }
 
-    override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FlowerViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.layout_flower_item, parent, false)
 
@@ -25,8 +25,7 @@ class FlowerAdapter (val dataset : Array <String>): RecyclerView.Adapter<FlowerA
         holder.flowerTextView.text = dataset[position]
     }
 
-    override fun gerItemCount() : Int{
+    override fun getItemCount(): Int {
         return dataset.size
     }
-
 }

@@ -10,10 +10,10 @@
         android:id="@+id/txtText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="125dp"
-        android:layout_marginTop="103dp"
+        android:layout_marginTop="220dp"
+        android:layout_marginEnd="166dp"
         android:text="ACTIVITY SEND"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         />
 

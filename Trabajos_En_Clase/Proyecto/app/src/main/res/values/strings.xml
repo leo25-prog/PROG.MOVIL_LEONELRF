@@ -5,5 +5,11 @@
     <string name="register_btn">Register</string>
     <string name="enter_btn">Enter</string>
     <string name="name_txt_register_activity">Name</string>
-    <string name="email_txt_register_activuty">Email</string>
+    <string name="email_txt_register_activity">Email</string>
+
+    <string-array name = "sexo">
+        <item> Hombre </item>
+        <item> Mujer </item>
+        <item> No binario </item>
+    </string-array>
 </resources>
