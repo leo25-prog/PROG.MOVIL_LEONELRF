@@ -2,7 +2,6 @@ package com.example.myreciclerv
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -20,9 +19,5 @@ class MainActivity : AppCompatActivity() {
             LinearLayoutManager.VERTICAL,
             false
         )
-
-        val adaptador = FlowerAdapter(resources.getStringArray(R.array.flower_array))
-
-        rvf.adapter = adaptador
     }
 }
