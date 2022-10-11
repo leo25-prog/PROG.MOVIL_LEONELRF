@@ -20,13 +20,13 @@ class FlowerAdapter (val dataset : List <Flower>, val onClick: (Flower) -> Unit)
                 }
             }
             flowerTextView = view.findViewById(R.id.flower_text)
-            flowerImageView = view.findViewById(R.id.flower_image)
+            flowerImageView = view.findViewById(R.id.flower_detail_image)
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FlowerViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.layout_flower_adapter_item, parent, false)
+             .inflate(R.layout.layout_flower_adapter_item, parent, false)
 
         return FlowerViewHolder(view, onClick)
     }

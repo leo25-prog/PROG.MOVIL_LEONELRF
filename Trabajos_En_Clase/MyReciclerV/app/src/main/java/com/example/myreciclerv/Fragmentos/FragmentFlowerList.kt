@@ -9,7 +9,9 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.myreciclerv.DataSource
 import com.example.myreciclerv.FlowerAdapter
+import com.example.myreciclerv.MainActivity
 import com.example.myreciclerv.R
 import com.example.myreciclerv.data.Flower.flowerList
 
@@ -33,18 +35,25 @@ class FragmentFlowerList : Fragment(R.layout.layout_fragment_listflower) {
         rvlf.layoutManager = LinearLayoutManager(contexto, LinearLayoutManager.VERTICAL, false)
 
         val adaptador = FlowerAdapter(
-            flowerList(resources),
+            DataSource.lsFlower,
             {
                 Toast.makeText(
                     context,
                     "Flor presionada ${it.name}",
                     Toast.LENGTH_SHORT
                 ).show()
+
+                val act = activity as MainActivity
+                act.mostrarDetailFlower(it)
             }
         )
 
         rvlf.adapter = adaptador
 
         return layout
+    }
+
+    fun updateLs() {
+        rvlf.adapter?.notifyDataSetChanged()
     }
 }

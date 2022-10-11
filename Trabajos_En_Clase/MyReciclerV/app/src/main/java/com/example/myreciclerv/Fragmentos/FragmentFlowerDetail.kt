@@ -5,8 +5,12 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
+import com.example.myreciclerv.MainActivity
 import com.example.myreciclerv.R
+import com.example.myreciclerv.data.Flower.flowerList
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -20,6 +24,9 @@ private const val ARG_PARAM2 = "param2"
  */
 class FragmentFlowerDetail : Fragment() {
     lateinit var txtName: TextView
+    lateinit var txtDescripcion: TextView
+    lateinit var btnDelete: Button
+    lateinit var img: ImageView
 
     // TODO: Rename and change types of parameters
     private var param1: String? = null
@@ -41,8 +48,24 @@ class FragmentFlowerDetail : Fragment() {
         val layout = inflater.inflate(R.layout.layout_fragment_flower_detail, container, false)
 
         txtName = layout.findViewById <TextView> (R.id.flower_detail_name)
+        txtDescripcion = layout.findViewById<TextView>(R.id.flower_detail_description)
+        img = layout.findViewById<ImageView>(R.id.flower_detail_image)
+        btnDelete = layout.findViewById<Button>(R.id.remove_button)
+        param1?.let { setDetailFlower(it.toLong()) }
 
-        return inflater.inflate(R.layout.layout_fragment_flower_detail, container, false)
+        return layout
+    }
+
+    fun setDetailFlower(id: Long) {
+        val lsFlowers = flowerList(resources)
+        val flower = lsFlowers.filter {  it.id==id }[0]
+        txtName.text = flower.name
+        txtDescripcion.text = flower.description
+        img.setImageResource(flower.image?:R.drawable.ic_launcher_foreground)
+        btnDelete.setOnClickListener {
+            val actpapa = activity as MainActivity
+            actpapa.deleteFlower(id)
+        }
     }
 
     companion object {
