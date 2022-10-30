@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface NotaDao {
     @Insert
-    fun insert(vararg nota : Nota)
+    suspend fun insertAsync(vararg nota : Nota)
 
     @Update
     fun update(nota: Nota)
@@ -23,6 +23,9 @@ interface NotaDao {
 
     @Query("select * from Nota order by fecha desc")
     fun getAllOrder() : Flow<List<Nota>>
+
+    @Query("delete from Nota")
+    suspend fun deleteAll() : Int
 
 
 }
