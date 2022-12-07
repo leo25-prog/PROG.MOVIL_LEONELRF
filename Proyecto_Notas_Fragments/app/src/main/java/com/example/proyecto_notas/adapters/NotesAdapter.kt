@@ -55,14 +55,12 @@ class NotesAdapter(private var notes: List<Note>, private val notesListener: Not
         var textSubtitle: TextView
         var textDateTime: TextView
         var layoutNote : LinearLayout
-        var imageNote : RoundedImageView
 
         init {
             textTitle = itemView.findViewById(R.id.textTitle)
             textSubtitle = itemView.findViewById(R.id.textSubtitle)
             textDateTime = itemView.findViewById(R.id.textDateTime)
             layoutNote = itemView.findViewById(R.id.layoutNote)
-            imageNote = itemView.findViewById(R.id.imageNote)
         }
 
         fun setNote(note: Note) {
@@ -80,14 +78,6 @@ class NotesAdapter(private var notes: List<Note>, private val notesListener: Not
             }
             else{
                 gradientDrawable.setColor(Color.parseColor("#333333"))
-            }
-
-            if(note.imagePath != null){
-                imageNote.setImageBitmap(BitmapFactory.decodeFile(note.imagePath))
-                imageNote.visibility = View.VISIBLE
-            }
-            else{
-                imageNote.visibility = View.GONE
             }
         }
     }

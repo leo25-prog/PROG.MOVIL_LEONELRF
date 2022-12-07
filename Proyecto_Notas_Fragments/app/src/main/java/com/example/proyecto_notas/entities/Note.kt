@@ -24,9 +24,6 @@ data class Note(
     @ColumnInfo(name = "note_text")
     var noteText: String,
 
-    @ColumnInfo(name = "image_path")
-    var imagePath : String,
-
     @ColumnInfo(name = "color")
     var color : String,
 

@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.proyecto_notas.NotesDataBase
 import com.example.proyecto_notas.R
 import com.example.proyecto_notas.activities.CreateNoteActivity
+import com.example.proyecto_notas.activities.CreateTasksActivity
 import com.example.proyecto_notas.adapters.NotesAdapter
 import com.example.proyecto_notas.entities.Note
 import com.example.proyecto_notas.listeners.NoteListener
@@ -95,9 +96,7 @@ class Notas_Fragment : Fragment(), NoteListener {
 
         var inputSearch = view.findViewById<EditText>(R.id.inputSearch)
         inputSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
-
-            }
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 notesAdapter.cancelTimer()
@@ -135,7 +134,6 @@ class Notas_Fragment : Fragment(), NoteListener {
             @Override
             override fun onPostExecute(result: List<Note>) {
                 super.onPostExecute(result)
-                //Log.d("My_notes", result.toString())
                 if(requestCode == REQUEST_CODE_SHOW_NOTES){
                     noteList.addAll(result)
                     notesAdapter.notifyDataSetChanged()
@@ -170,7 +168,6 @@ class Notas_Fragment : Fragment(), NoteListener {
         }
         else if(requestCode == REQUEST_CODE_UPDATE_NOTE && resultCode == AppCompatActivity.RESULT_OK){
             if(data != null){
-                Log.d("My_notes", "AVER  ")
                 getNotes(REQUEST_CODE_UPDATE_NOTE, data.getBooleanExtra("isNoteDeleted", false))
             }
         }

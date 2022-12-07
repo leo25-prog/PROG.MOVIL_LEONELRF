@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/layoutNote"
+    android:id="@+id/layoutTask"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginStart="@dimen/_12sdp"
     android:layout_marginTop="@dimen/_12sdp"
-    android:background="@drawable/background_note">
+    android:background="@drawable/background_task">
 
     <TextView
-        android:id="@+id/textTitle"
+        android:id="@+id/taskTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/_8sdp"
@@ -18,10 +18,11 @@
         android:layout_marginTop="@dimen/_8sdp"
         android:includeFontPadding="false"
         android:textColor="@color/colorWhite"
-        android:textSize="@dimen/_13ssp" />
+        android:textSize="@dimen/_13ssp"
+        />
 
     <TextView
-        android:id="@+id/textSubtitle"
+        android:id="@+id/taskPriority"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/_8sdp"
@@ -30,10 +31,10 @@
         android:layout_marginBottom="@dimen/_4sdp"
         android:includeFontPadding="false"
         android:textColor="@color/colorNoteSubtitleText"
-        android:textSize="@dimen/_12ssp" />
+        android:textSize="@dimen/_12ssp"/>
 
     <TextView
-        android:id="@+id/textDateTime"
+        android:id="@+id/taskLimitDateTime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/_8sdp"
@@ -41,6 +42,6 @@
         android:layout_marginBottom="@dimen/_8sdp"
         android:includeFontPadding="false"
         android:textColor="@color/colorNoteSubtitleText"
-        android:textSize="@dimen/_7ssp"/>
+        android:textSize="@dimen/_9ssp"/>
 
 </LinearLayout>

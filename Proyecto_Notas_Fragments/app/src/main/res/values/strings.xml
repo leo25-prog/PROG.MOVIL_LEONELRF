@@ -18,4 +18,16 @@
     <string name="are_you_sure_you_want_to_delete_this_note">Are you sure you want to delete this note?</string>
     <string name="delete_note_confirm">Delete note</string>
     <string name="cancel_dialog">Cancel dialog</string>
+    <string name="my_tasks">My tasks</string>
+    <string name="delete_task">Delete task</string>
+    <string name="are_you_sure_you_want_to_delete_this_task">Are_you_sure_you_want_to_delete_this_task</string>
+    <string name="delete_task_confirm">Delete task</string>
+    <string name="change_time">Change time</string>
+    <string name="time_selected_is">time selected is</string>
+
+    <string-array name="priority">
+        <item> High Priority </item>
+        <item> Medium Priority </item>
+        <item> Low Priority </item>
+    </string-array>
 </resources>

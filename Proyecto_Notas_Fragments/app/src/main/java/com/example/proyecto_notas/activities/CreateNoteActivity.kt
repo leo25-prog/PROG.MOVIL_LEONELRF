@@ -4,63 +4,116 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.net.Uri
 import android.os.AsyncTask
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.util.Patterns
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.view.View.OnTouchListener
+import android.widget.*
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.*
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.content.PackageManagerCompat.LOG_TAG
+import androidx.core.view.get
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.proyecto_notas.NotesDataBase
 import com.example.proyecto_notas.R
+import com.example.proyecto_notas.adapters.MediaAdapter
+import com.example.proyecto_notas.databinding.ActivityCreateNoteBinding
+import com.example.proyecto_notas.entities.Multimedia
 import com.example.proyecto_notas.entities.Note
+import com.example.proyecto_notas.listeners.MediaListener
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
-class CreateNoteActivity : AppCompatActivity() {
+class CreateNoteActivity : AppCompatActivity(), OnTouchListener, MediaListener {
+
+    private lateinit var imageBack: ImageView
 
     private lateinit var inputNoteTitle: EditText
     private lateinit var inputNoteSubtitle: EditText
     private lateinit var inputNoteText: EditText
     private lateinit var textDateTime: TextView
-    private lateinit var imageBack: ImageView
     private lateinit var selectdNoteColor: String
     private lateinit var viewSubtitleIndicator: View
-    private lateinit var imageNote: ImageView
-    private lateinit var selectedImagePath: String
+
+    private lateinit var btnPlayAudio : Button
+    private lateinit var btnStopRecording : Button
+    private var mStartRecording: Boolean = true
+    private var recorder: MediaRecorder? = null
+    private lateinit var audioPath: String
+
+    private var player: MediaPlayer? = null
+
+    private lateinit var mediaPath: String
+
     private lateinit var textWebURL: TextView
     private lateinit var layoutWebURL: LinearLayout
 
+    //private lateinit var videoMedia : VideoView
+
+    lateinit var photoURI: Uri
+    lateinit var videoURI: Uri
+
     private val REQUEST_CODE_STORAGE_PERMISSION = 1
     private val REQUEST_CODE_SELECT_IMAGE = 2
+    private val REQUEST_IMAGE_CAPTURE = 3
+    private val REQUEST_VIDEO_CAPTURE = 4
+    private val REQUEST_CODE_SHOW_MEDIA = 5
+    private val REQUEST_CODE_ADD_MEDIA = 6
+    private val REQUEST_CODE_SHOW_ESPECIFIC_MEDIA = 7
+    private val REQUEST_CODE_ADD_MEDIA_ESPECIFIC = 8
 
     private var dialogAddURL: AlertDialog? = null
     private var dialogDeleteNote: AlertDialog? = null
 
     private var alreadyAvailableNote : Note? = null
 
+    //lateinit var mediaController: MediaController
+
+    lateinit var binding : ActivityCreateNoteBinding
+
+    private var dialogAddDescription: AlertDialog? = null
+
+    private lateinit var recyclerviewMedia : RecyclerView
+    private lateinit var mediaList : MutableList<Multimedia>
+    private lateinit var mediaAdapter : MediaAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_note)
+        binding = ActivityCreateNoteBinding.inflate(layoutInflater)
 
         imageBack = findViewById(R.id.imageBack)
         imageBack.setOnClickListener{
             onBackPressed()
+        }
+        lateinit var imageSave : ImageView
+        imageSave = findViewById(R.id.imageSave)
+        imageSave.setOnClickListener{
+            saveNote()
         }
 
         inputNoteTitle = findViewById(R.id.inputNoteTitle)
@@ -68,7 +121,22 @@ class CreateNoteActivity : AppCompatActivity() {
         inputNoteText = findViewById(R.id.inputNote)
         textDateTime = findViewById(R.id.textDateTime)
         viewSubtitleIndicator = findViewById(R.id.viewSubtitleIndicator)
-        imageNote = findViewById(R.id.imageNote)
+
+        dataInitialize()
+        recyclerviewMedia = findViewById(R.id.recyclerviewMedia)
+        recyclerviewMedia.setLayoutManager(
+            StaggeredGridLayoutManager(1, StaggeredGridLayoutManager.VERTICAL)
+        )
+
+        mediaAdapter = MediaAdapter(mediaList, this)
+        recyclerviewMedia.adapter = mediaAdapter
+
+        //mediaController = MediaController(this)
+        //mediaController.setAnchorView(binding.root)
+
+        btnPlayAudio = findViewById(R.id.btnPlayAudio)
+        btnStopRecording = findViewById(R.id.btnStopRecording)
+
         textWebURL = findViewById(R.id.textWebURL)
         layoutWebURL = findViewById(R.id.layoutWebURL)
 
@@ -76,14 +144,7 @@ class CreateNoteActivity : AppCompatActivity() {
             SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm a", Locale.getDefault()).format(Date())
         )
 
-        lateinit var imageSave : ImageView
-        imageSave = findViewById(R.id.imageSave)
-        imageSave.setOnClickListener{
-            saveNote()
-        }
-
         selectdNoteColor = "#333333"
-        selectedImagePath = ""
 
         if (intent.getBooleanExtra("IsViewOrUpdate", false)) {
             var note = Note(
@@ -93,7 +154,6 @@ class CreateNoteActivity : AppCompatActivity() {
                 noteText = "",
                 dateTime = "",
                 color = "",
-                imagePath = "",
                 webLink = ""
             )
 
@@ -104,7 +164,7 @@ class CreateNoteActivity : AppCompatActivity() {
             var cuenta = false
             while(pos < prueba.length){
                 if(prueba[pos] == '=') cuenta = true
-                else if(prueba[pos] == ','){
+                else if(prueba[pos] == ',' || pos == prueba.length-1){
                     if(con != 2) {
 
                         if (con == 0) note.uid = dato.toInt()
@@ -112,9 +172,8 @@ class CreateNoteActivity : AppCompatActivity() {
                         else if (con == 3) note.dateTime = dato
                         else if (con == 4) note.subtitle = dato
                         else if (con == 5) note.noteText = dato
-                        else if (con == 6) note.imagePath = dato
-                        else if (con == 7) note.color = dato
-                        else if (con == 8) note.webLink = dato
+                        else if (con == 6) note.color = dato
+                        else if (con == 7) note.webLink = dato
 
                         cuenta = false
                         dato = ""
@@ -127,7 +186,6 @@ class CreateNoteActivity : AppCompatActivity() {
                 }
                 pos ++
             }
-            note.webLink = dato.substring(0, dato.length-1)
             alreadyAvailableNote = note
             setViewOrUpdate()
         }
@@ -137,15 +195,52 @@ class CreateNoteActivity : AppCompatActivity() {
             layoutWebURL.visibility = View.GONE
         }
 
-        findViewById<View>(R.id.imageRemoveImage).setOnClickListener{
-            imageNote.setImageBitmap(null)
-            imageNote.visibility = View.GONE
-            findViewById<View>(R.id.imageRemoveImage).visibility = View.GONE
-            selectedImagePath = ""
+        btnStopRecording.setOnClickListener{
+            stopRecording()
+        }
+
+        btnPlayAudio.setOnClickListener{
+            onPlay(mStartRecording)
+            mStartRecording = !mStartRecording
         }
 
         initMiscellaneous()
         setSubtitleIndicatorColor()
+    }
+
+    private fun getMedia(requestCode: Int, idNoteUpdateorView : Int) {
+        var id = NotesDataBase.getDatabase(applicationContext)?.noteDao()?.getAllNotes()!!.size
+
+        if(requestCode == REQUEST_CODE_SHOW_MEDIA){
+            var media = NotesDataBase.getDatabase(applicationContext)?.multimediaDao()?.getMultimedia(id + 1)
+
+            mediaList.addAll(media!!)
+            mediaAdapter.notifyDataSetChanged()
+        }
+        else if(requestCode == REQUEST_CODE_ADD_MEDIA){
+            var media = NotesDataBase.getDatabase(applicationContext)?.multimediaDao()?.getMultimedia(id + 1)
+            var newMedia = media!!.get(media!!.size - 1)
+
+            mediaList.add(newMedia)
+            mediaAdapter.notifyDataSetChanged()
+        }
+        else if(requestCode == REQUEST_CODE_SHOW_ESPECIFIC_MEDIA){
+            var media = NotesDataBase.getDatabase(applicationContext)?.multimediaDao()?.getMultimedia(idNoteUpdateorView)
+
+            mediaList.addAll(media!!)
+            mediaAdapter.notifyDataSetChanged()
+        }
+        else if(requestCode == REQUEST_CODE_ADD_MEDIA_ESPECIFIC) {
+            var media = NotesDataBase.getDatabase(applicationContext)?.multimediaDao()?.getMultimedia(idNoteUpdateorView)
+            var newMedia = media!!.get(media!!.size - 1)
+
+            mediaList.add(newMedia)
+            mediaAdapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun dataInitialize(){
+        mediaList = ArrayList()
     }
 
     private fun setViewOrUpdate(){
@@ -153,17 +248,13 @@ class CreateNoteActivity : AppCompatActivity() {
         inputNoteSubtitle.setText(alreadyAvailableNote!!.subtitle)
         inputNoteText.setText(alreadyAvailableNote!!.noteText)
         textDateTime.setText(alreadyAvailableNote!!.dateTime)
-        if(alreadyAvailableNote!!.imagePath != null && !alreadyAvailableNote!!.imagePath.trim().isEmpty()){
-            imageNote.setImageBitmap(BitmapFactory.decodeFile(alreadyAvailableNote!!.imagePath))
-            imageNote.visibility = View.VISIBLE
-            findViewById<View>(R.id.imageRemoveImage).visibility = View.VISIBLE
-            selectedImagePath = alreadyAvailableNote!!.imagePath
-        }
 
         if(alreadyAvailableNote!!.webLink != null && !alreadyAvailableNote!!.webLink.trim().isEmpty()){
             textWebURL.setText(alreadyAvailableNote!!.webLink)
             layoutWebURL.visibility = View.VISIBLE
         }
+
+        getMedia(REQUEST_CODE_SHOW_ESPECIFIC_MEDIA, alreadyAvailableNote!!.uid)
     }
 
     private fun saveNote(){
@@ -184,7 +275,6 @@ class CreateNoteActivity : AppCompatActivity() {
             noteText = inputNoteText.text.toString(),
             dateTime = textDateTime.text.toString(),
             color = selectdNoteColor,
-            imagePath = selectedImagePath,
             webLink = ""
         )
 
@@ -306,6 +396,24 @@ class CreateNoteActivity : AppCompatActivity() {
             }
         }
 
+        layoutMiscellaneous.findViewById<View>(R.id.layoutAddPhoto).setOnClickListener {
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED)
+            takePhoto()
+        }
+
+        layoutMiscellaneous.findViewById<View>(R.id.layoutAddVideo).setOnClickListener {
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED)
+            takeVideo()
+        }
+
+        layoutMiscellaneous.findViewById<View>(R.id.layoutAddAudio).setOnClickListener{
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+            grabar()
+            iniciarGraabacion()
+        }
+
+        layoutMiscellaneous.findViewById<View>(R.id.layoutAddReminder).visibility = View.GONE
+
         layoutMiscellaneous.findViewById<View>(R.id.layoutAddUrl).setOnClickListener{
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
             showAddURLDialog()
@@ -368,10 +476,57 @@ class CreateNoteActivity : AppCompatActivity() {
         gradientDrawable.setColor(Color.parseColor(selectdNoteColor))
     }
 
+    @SuppressLint("QueryPermissionsNeeded")
     private fun selectImage(){
         var intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         if(intent.resolveActivity(packageManager) != null){
             startActivityForResult(intent, REQUEST_CODE_SELECT_IMAGE)
+        }
+    }
+
+    @SuppressLint("QueryPermissionsNeeded")
+    private fun takePhoto(){
+        var intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if(intent.resolveActivity(packageManager) != null) {
+            var photoFile: File? = null
+            try {
+                photoFile = saveImage()
+            } catch (ex: IOException) {
+                null
+            }
+
+            if (photoFile != null) {
+                photoURI = FileProvider.getUriForFile(
+                    this,
+                    "com.example.proyecto_notas.fileprovider",
+                    photoFile
+                )
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                startActivityForResult(intent, REQUEST_IMAGE_CAPTURE)
+            }
+        }
+    }
+
+    @SuppressLint("QueryPermissionsNeeded")
+    private fun takeVideo(){
+        var intent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
+        if(intent.resolveActivity(packageManager) != null) {
+            var videoFile: File? = null
+            try {
+                videoFile = saveVideo()
+            } catch (ex: IOException) {
+                Log.e("error", ex.toString())
+            }
+
+            if (videoFile != null) {
+                videoURI = FileProvider.getUriForFile(
+                    this,
+                    "com.example.proyecto_notas.fileprovider",
+                    videoFile
+                )
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI)
+                startActivityForResult(intent, REQUEST_VIDEO_CAPTURE)
+            }
         }
     }
 
@@ -381,6 +536,7 @@ class CreateNoteActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
         if(requestCode == REQUEST_CODE_STORAGE_PERMISSION && grantResults.size > 0){
             if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
                 selectImage()
@@ -393,25 +549,44 @@ class CreateNoteActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CODE_SELECT_IMAGE && resultCode == RESULT_OK) {
+
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            showAddDescriptionDialog(REQUEST_IMAGE_CAPTURE)
+        }
+        else if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK){
+            showAddDescriptionDialog(REQUEST_VIDEO_CAPTURE)
+        }
+        else if (requestCode == REQUEST_CODE_SELECT_IMAGE && resultCode == RESULT_OK) {
             if (data != null) {
                 var selectedImageUri: Uri? = data.data
                 if (selectedImageUri != null) {
                     try {
-                        val inputStream = contentResolver.openInputStream(selectedImageUri)
-                        val bitmap = BitmapFactory.decodeStream(inputStream)
-                        imageNote!!.setImageBitmap(bitmap)
-                        imageNote!!.visibility = View.VISIBLE
-                        findViewById<View>(R.id.imageRemoveImage).visibility = View.GONE
-
-                        selectedImagePath = getPathFromUri(selectedImageUri)
-
+                        mediaPath = getPathFromUri(selectedImageUri)
+                        showAddDescriptionDialog(REQUEST_IMAGE_CAPTURE)
                     } catch (exception: Exception) {
                         Toast.makeText(this, exception.message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
+    }
+
+    @Throws(IOException::class)
+    private fun saveImage(): File? {
+        val nombreArchivo = "foto_"
+        val directorio = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        val archivo = File.createTempFile(nombreArchivo, ".jpg", directorio)
+        mediaPath = archivo.absolutePath
+        return archivo
+    }
+
+    @Throws(IOException::class)
+    private fun saveVideo(): File? {
+        val nombreArchivo = "video_"
+        val directorio = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        val archivo = File.createTempFile(nombreArchivo, ".mp4", directorio)
+        mediaPath = archivo.absolutePath
+        return archivo
     }
 
     private fun getPathFromUri(contentUri : Uri) : String {
@@ -427,6 +602,70 @@ class CreateNoteActivity : AppCompatActivity() {
             cursor.close()
         }
         return filePath
+    }
+
+    private fun showAddDescriptionDialog(mediaType : Int){
+        if(dialogAddDescription == null) {
+            var builder: AlertDialog.Builder = AlertDialog.Builder(this)
+            var view: View = LayoutInflater.from(this).inflate(
+                R.layout.layout_add_description,
+                findViewById(R.id.layoutAddDescriptionContainer)
+            )
+            builder.setView(view)
+
+            dialogAddDescription = builder.create()
+            if (dialogAddDescription!!.window != null) {
+                dialogAddDescription!!.window!!.setBackgroundDrawable(ColorDrawable(0))
+            }
+
+            var inputDescription: EditText = view.findViewById(R.id.inputDescription)
+            inputDescription.requestFocus()
+
+            view.findViewById<View>(R.id.textAddDescription).setOnClickListener {
+                if(mediaType == REQUEST_IMAGE_CAPTURE) saveMediaOnDatabase(inputDescription.text.toString(), REQUEST_IMAGE_CAPTURE)
+                else if(mediaType == REQUEST_VIDEO_CAPTURE) saveMediaOnDatabase(inputDescription.text.toString(), REQUEST_VIDEO_CAPTURE)
+                else saveMediaOnDatabase(inputDescription.text.toString(), 3)
+
+                inputDescription.setText("")
+                mediaPath = ""
+                dialogAddDescription!!.dismiss()
+            }
+
+            view.findViewById<View>(R.id.textCancelDescription).setOnClickListener {
+                inputDescription.setText("")
+                mediaPath = ""
+                dialogAddDescription!!.dismiss()
+            }
+        }
+        dialogAddDescription!!.show()
+    }
+
+    private fun saveMediaOnDatabase(description: String, action : Int) {
+        var id = NotesDataBase.getDatabase(applicationContext)?.noteDao()?.getAllNotes()!!.size
+        var type = ""
+        if(action == REQUEST_IMAGE_CAPTURE) type = "photo"
+        else if(action == REQUEST_VIDEO_CAPTURE) type = "video"
+        val media = Multimedia(
+            idMultimedia = 0,
+            idNote = id + 1,
+            idTask = 0,
+            type = type,
+            uri = mediaPath,
+            description = description
+        )
+
+        if(media.uri.substring(media.uri.length-3) == "mp4") media.type = "video"
+        else media.type = "photo"
+
+        if(alreadyAvailableNote != null){
+            media.idNote = alreadyAvailableNote!!.uid
+            NotesDataBase.getDatabase(applicationContext)?.multimediaDao()?.insert(media)
+            getMedia(REQUEST_CODE_ADD_MEDIA_ESPECIFIC, alreadyAvailableNote!!.uid)
+        }
+        else{
+            NotesDataBase.getDatabase(applicationContext)?.multimediaDao()?.insert(media)
+            getMedia(REQUEST_CODE_ADD_MEDIA, 0)
+        }
     }
 
     private fun showAddURLDialog(){
@@ -467,4 +706,113 @@ class CreateNoteActivity : AppCompatActivity() {
 
         dialogAddURL!!.show()
     }
+
+    override fun onTouch(p0: View?, p1: MotionEvent?): Boolean {
+        //mediaController.show()
+        return false
+    }
+
+    private fun grabar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            revisarPermisos()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun revisarPermisos() {
+        when {
+            ContextCompat.checkSelfPermission(
+                applicationContext,
+                "android.permission.RECORD_AUDIO"
+            ) == PackageManager.PERMISSION_GRANTED -> {}
+            shouldShowRequestPermissionRationale("android.permission.RECORD_AUDIO") -> {
+
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("Title")
+                    .setMessage("Debes dar perimso para grabar audios")
+                    .setNegativeButton("Cancel") { dialog, which ->
+                    }
+                    .setPositiveButton("OK") { dialog, which ->
+                        requestPermissions(
+                            arrayOf("android.permission.RECORD_AUDIO",
+                                "android.permission.WRITE_EXTERNAL_STORAGE"),
+                            1001)
+                    }
+                    .show()
+            }
+            else -> {
+                requestPermissions(
+                    arrayOf("android.permission.RECORD_AUDIO",
+                        "android.permission.WRITE_EXTERNAL_STORAGE"),
+                    1001)
+            }
+        }
+    }
+
+    @SuppressLint("RestrictedApi")
+    private fun iniciarGraabacion() {
+        recorder = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            saveAudio()
+            setOutputFile(audioPath)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+
+            try {
+                prepare()
+            } catch (e: IOException) {
+                Log.e(LOG_TAG, "prepare() failed")
+            }
+            start()
+        }
+    }
+
+    private fun onPlay(start: Boolean) = if (start) {
+        startPlaying()
+    } else {
+        stopPlaying()
+    }
+
+    private fun stopPlaying() {
+        player?.release()
+        player = null
+    }
+
+    @SuppressLint("RestrictedApi")
+    private fun startPlaying() {
+        player = MediaPlayer().apply {
+            try {
+                setDataSource(audioPath)
+                prepare()
+                start()
+            } catch (e: IOException) {
+                Log.e(LOG_TAG, "prepare() failed")
+            }
+        }
+    }
+
+    private fun stopRecording() {
+        recorder?.apply {
+            stop()
+            release()
+        }
+        recorder = null
+    }
+
+    @Throws(IOException::class)
+    fun saveAudio(): File {
+        val nombreArchivo = "audio_"
+        val directorio = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        val archivo = File.createTempFile(nombreArchivo, ".mp3", directorio)
+        audioPath = archivo.absolutePath
+        return archivo
+    }
+
+    override fun onMediaClicked(media: Multimedia?, position: Int) {
+        if(media!!.type == "video"){
+
+        }
+        Toast.makeText(applicationContext, position.toString(), Toast.LENGTH_SHORT).show()
+    }
+
 }

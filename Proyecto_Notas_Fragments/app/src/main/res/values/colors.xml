@@ -20,4 +20,5 @@
     <color name="colorDelete">#F83636</color>
     <color name="colorEditarNota">#FDEBD0</color>
     <color name="colorSearchBackground">#333333</color>
+    <color name="colorRecordatorio">#FFEF03</color>
 </resources>
